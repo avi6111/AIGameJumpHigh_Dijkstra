@@ -2,6 +2,8 @@
 
 **[English](README.md) | 日本語**
 
+![VRM Game Starter スクリーンショット](screenshot.png)
+
 [VRM](https://vrm.dev/)アバターと[Three.js](https://threejs.org/)（WebGPU）で3Dゲームを作り始めるためのスターターテンプレートです。cloneしてコマンドを1つ実行するだけで、キャラクターが歩き回れるレベルが動きます。そこから自分のゲームに育ててください。
 
 物理エンジン不要・フレームワーク非依存。素のTypeScript + Three.jsに、[three-mesh-bvh](https://github.com/gkjohnson/three-mesh-bvh)による高速で三角形精度の衝突判定を組み合わせています。
