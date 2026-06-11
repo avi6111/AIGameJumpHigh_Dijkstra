@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕹️</text></svg>">
+    <title>VRM Game Starter</title>
+</head>
+
+<body>
+    <main id="root">
+        <canvas id="scene"></canvas>
+        <section class="hud">
+            <p class="brand">VRM Game Starter</p>
+            <p class="status" data-status>Loading</p>
+        </section>
+        <section class="vrmDropOverlay" data-vrm-drop-overlay aria-hidden="true">
+            <p>Drop .vrm</p>
+            <span>VRM0 / VRM1.0</span>
+        </section>
+    </main>
+    <img class="controlKeys" src="/images/Controls.png" alt="control keys">
+    <p class="title">
+        Built on the
+        <a target="_blank" href="https://github.com/pmndrs/BVHEcctrl">BVHEcctrl</a> character controller by
+        <a target="_blank" href="https://github.com/ErdongChen-Andrew">Andrew Chen</a>
+        <br>
+        Credit for
+        <a target="_blank" href="https://quaternius.itch.io/universal-animation-library">Universal Animation Library</a>
+        by
+        <a target="_blank" href="https://x.com/quaternius">Quaternius</a>
+        <br>
+        Sample VRM avatars made with
+        <a target="_blank" href="https://vroid.com/">VRoid Studio</a>
+    </p>
+    <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
