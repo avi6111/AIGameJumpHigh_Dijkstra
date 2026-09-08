@@ -171,6 +171,14 @@ export function createCharacterModelRuntime(
       if (loadFailed) return "CHARACTER LOAD FAILED";
       return null;
     },
+    // 新增：获取角色
+    getCharacter(): AnimatedCharacterModel | null {
+        return currentModel;
+    },
+    // 新增：获取位置
+    getPosition(): THREE.Vector3 | null {
+        return currentModel?.group.position ?? null;
+    },
     dispose() {
       loadVersion += 1;
       pendingLoad = null;

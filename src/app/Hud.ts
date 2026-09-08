@@ -5,8 +5,8 @@ export interface Hud {
   update(elapsed: number, createStatusText: () => string): void;
 }
 
+let nextUpdateTime = 0;
 export function createHud(statusElement: HTMLElement | null): Hud {
-  let nextUpdateTime = 0;
   let lastStatusText = "";
 
   const setStatusText = (statusText: string) => {

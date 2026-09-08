@@ -2,7 +2,7 @@ import * as THREE from "three/webgpu";
 
 export const LEVEL_STORAGE_KEY = "vrm-game-starter.level.v1";
 export const LEVEL_EXPORT_FILENAME = "vrm-game-starter-level.json";
-export const LEVEL_STATE_VERSION = 2;
+export const LEVEL_STATE_VERSION = 2.1;
 
 export type LevelTargetKind = "static" | "kinematic";
 export type Vector3Tuple = [x: number, y: number, z: number];
@@ -22,6 +22,12 @@ export interface LevelObjectState extends LevelObjectTransform {
 export interface LevelState {
   version: typeof LEVEL_STATE_VERSION;
   objects: LevelObjectState[];
+  gameState?: {            // 新增：全局游戏状态
+    score: number;
+    collectedItems: string[];
+    triggeredEvents: string[];
+    playerCheckpoint: Vector3Tuple;
+  };
 }
 
 export interface LevelStateTarget {

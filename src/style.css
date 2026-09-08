@@ -149,11 +149,12 @@ body,
 }
 
 .controlKeys {
-  position: absolute;
+  
   width: 12rem;
+  /*position: absolute;
   left: 50%;
   margin-left: -6rem;
-  bottom: 12%;
+  bottom: 12%;*/
   opacity: 0.82;
   user-select: none;
   -moz-user-select: none;
@@ -167,10 +168,11 @@ body,
   line-height: 1.5;
   font-family: "Avenir Next", "Trebuchet MS", sans-serif;
   color: #dde7d4;
+  /* 
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 2%;
+  bottom: 2%;*/
   margin: 0;
   padding: 0.5rem 0.9rem;
   background: rgba(19, 27, 24, 0.72);
@@ -180,7 +182,11 @@ body,
 }
 
 .title > a {
-  color: #8fd8ff;
+  color: #8fd8ff; 
+}
+/* 🎯 隐藏状态 */
+.title.hidden {
+    display: none;
 }
 
 @media (max-width: 768px) {
@@ -199,4 +205,51 @@ body,
   .title {
     display: none;
   }
+}
+
+ /* ========== ⭐ 倒计时样式（红色 + 羽化描边） ========== */
+.countdown[data-cd] {
+    /* 倒计时放在底部中间 */
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    font-size: 72px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    font-family: 'Arial Black', 'Impact', sans-serif;
+
+    /* 🟥 红色文字 */
+    color: #ff1744;
+
+    /* ✨ 羽化描边 (多重 text-shadow 实现发光羽化效果) */
+    text-shadow:
+        /* 核心发光层 - 红色羽化 */
+        0 0 10px rgba(255, 23, 68, 0.8),
+        0 0 20px rgba(255, 23, 68, 0.6),
+        0 0 40px rgba(255, 23, 68, 0.4),
+        0 0 80px rgba(255, 23, 68, 0.2),
+        0 0 120px rgba(255, 23, 68, 0.1),
+        /* 白色描边 - 增加可读性 */
+        0 0 2px rgba(255, 255, 255, 0.3),
+        0 0 4px rgba(255, 255, 255, 0.1);
+}
+/* 底部信息容器 */
+.bottom-info {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 100;
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+
+.bottom-info * {
+    pointer-events: auto;
 }

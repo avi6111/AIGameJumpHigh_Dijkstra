@@ -237,7 +237,7 @@ export function applyMovementInput(
   if (movement.leftward !== undefined) state.leftwardState = movement.leftward;
   if (movement.rightward !== undefined) state.rightwardState = movement.rightward;
   if (movement.joystick) state.joystickState.set(movement.joystick.x, movement.joystick.y);
-  if (movement.run !== undefined) state.runState = movement.run;
+  if (movement.run !== undefined) state.runState = state.runLock || movement.run;
   if (movement.jump !== undefined) state.jumpState = movement.jump;
 }
 

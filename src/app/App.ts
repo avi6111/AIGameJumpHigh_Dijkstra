@@ -14,7 +14,11 @@ import { createHud } from "./Hud";
 import { createInspector } from "./Inspector";
 import { createLevel } from "./Level";
 import { createLevelEditor } from "./LevelEditor";
+import { createCountDownHud } from "./HudCd";
+import type { HudCdState } from "./HudCd";
+import levelConfigs from "./LevelConfig";
 
+import { AudioInspector } from './Audio'; // 引入封装好的类
 const IDLE_MOVEMENT_INPUT: MovementInput = {
   forward: false,
   backward: false,
@@ -28,17 +32,21 @@ export interface AppOptions {
   canvas: HTMLCanvasElement;
   statusElement: HTMLElement | null;
   vrmDropOverlay: HTMLElement | null;
+  dom:Document
 }
 
 export interface App {
   start(): void;
   dispose(): void;
+  resetPlayer(): void;
+  getCountdownState(): HudCdState;
 }
 
 export function createApp({
   canvas,
   statusElement,
   vrmDropOverlay,
+  dom,
 }: AppOptions): App {
   const scene = new THREE.Scene();
   const skyScene = new THREE.Scene();
@@ -57,14 +65,23 @@ export function createApp({
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
+  // 2. 初始化音频 Inspector（传入相机即可）
+  const audioInspector = new AudioInspector(camera);
+
   const renderGraph = createRenderGraph(renderer, scene, skyScene, camera);
   const clock = new THREE.Clock();
   const hud = createHud(statusElement);
-  const level = createLevel(scene);
+  const cdElement = document.querySelector<HTMLElement>("[data-cd]");
+  const countdownHud = createCountDownHud(cdElement);
+  
+
   const controllerRig = createController(camera, scene, canvas);
   const characterRuntime = createCharacterModelRuntime(controllerRig.controller, {
     warmUp: warmUpCharacterModel,
   });
+  //console.log(controllerRig)
+  const level = createLevel(scene,controllerRig.controller);
+  countdownHud.start(levelConfigs[parseInt(level.currentLevel)]?.timeLimit ?? 70); // 70秒倒计时
   let sampleVrmIndex = 0;
   const characterFileControls = {
     loadVrmFile: () => {
@@ -145,6 +162,7 @@ export function createApp({
 
   const dispose = () => {
     if (disposed) return;
+   
     disposed = true;
     renderer.setAnimationLoop(null);
     window.removeEventListener("resize", resize);
@@ -160,6 +178,9 @@ export function createApp({
     skyRig.dispose();
     shadowRig.dispose();
     renderer.dispose();
+
+    audioInspector.dispose();
+    
   };
 
   window.addEventListener("resize", resize);
@@ -170,6 +191,12 @@ export function createApp({
       void startRendering();
     },
     dispose,
+    resetPlayer() {
+      controllerRig.resetPlayer();
+    },
+    getCountdownState() {
+      return countdownHud.getState();
+    },
   };
 
   async function startRendering() {
@@ -233,5 +260,6 @@ export function createApp({
       const speed = characterStatus.linvel.length().toFixed(1);
       return `${status} / ${speed} m/s`;
     });
+    countdownHud.update(elapsed);
   }
 }

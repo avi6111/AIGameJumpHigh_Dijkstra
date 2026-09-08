@@ -35,6 +35,9 @@ interface AOParameterControls {
 
 interface InspectorWithParameters extends Inspector {
   parameters: Tab;
+  viewer: Tab;
+  performance: Tab;
+  settings:Tab;
 }
 
 interface RendererInspectorSlot {
@@ -79,6 +82,9 @@ export function createInspector({
 }: InspectorOptions): InspectorHandle {
   const inspector = new Inspector() as InspectorWithParameters;
   renderer.inspector = inspector;
+  inspector.removeTab(inspector.viewer);//暂时去掉。。。
+  inspector.removeTab(inspector.performance);
+  inspector.removeTab(inspector.settings);
 
   createCharacterParameters(inspector, characterFileControls);
   createLevelParameters(inspector, levelControls);
@@ -139,16 +145,18 @@ function createCharacterParameters(
   group.add(controls, "loadVrmFile").name("Load VRM File...");
   group.add(controls, "switchSample").name("Switch Sample VRM");
 }
-
+//#region Level
 function createLevelParameters(
   inspector: Inspector,
   controls: LevelEditorControls
 ) {
   const group = inspector.createParameters("Level");
+  group.add(controls, "currentLevel").name("当前关卡");
   group.add(controls, "edit").name("Edit");
   group.add(controls, "save").name("Save");
   group.add(controls, "export").name("Export");
 }
+//#endregion
 
 function createControllerParameters(
   inspector: Inspector,
@@ -480,3 +488,4 @@ function createAOParameterControls(
     },
   };
 }
+

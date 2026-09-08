@@ -32,6 +32,10 @@ export interface ColliderUserData {
   active?: boolean;
 }
 
+export interface ColliderMeshUserData {
+  collisionPadding?: number;
+}
+
 export type CollisionCheckCollider = THREE.Mesh & {
   geometry: THREE.BufferGeometry & { boundsTree: GeometryBVH };
 };
@@ -55,7 +59,12 @@ export function buildMergedGeometry(
 
     geometryMatrix.copy(mesh.matrixWorld);
     if (space === "local") geometryMatrix.premultiply(rootInverse);
-    const cleanGeometry = cloneColliderGeometry(mesh.geometry, geometryMatrix);
+    const collisionPadding = getCollisionPadding(mesh);
+    const cleanGeometry = cloneColliderGeometry(
+      mesh.geometry,
+      geometryMatrix,
+      collisionPadding
+    );
     if (!cleanGeometry) return;
     temporaryMeshes.push(new THREE.Mesh(cleanGeometry));
   });
@@ -147,10 +156,17 @@ export function disposeTemporaryMeshes(meshes: THREE.Mesh[]) {
   }
   meshes.length = 0;
 }
-
+/**
+ * 
+ * @param geometry 要克隆的碰撞几何体
+ * @param matrix （是否）变换的矩阵
+ * @param padding 创建的 box 会把geometry.getAttribute('position|(Scale)') 这属性放大一点，则reboundMesh()的时候完成更新 Mesh
+ * @returns 
+ */
 export function cloneColliderGeometry(
   geometry: THREE.BufferGeometry,
-  matrix?: THREE.Matrix4
+  matrix?: THREE.Matrix4,
+  padding = 0
 ) {
   const position = geometry.getAttribute("position");
   const normal = geometry.getAttribute("normal");
@@ -159,9 +175,44 @@ export function cloneColliderGeometry(
   const cleanGeometry = new THREE.BufferGeometry();
   cleanGeometry.setAttribute("position", source.getAttribute("position").clone());
   cleanGeometry.setAttribute("normal", source.getAttribute("normal").clone());
+  expandGeometryBounds(cleanGeometry, padding);
   if (matrix) cleanGeometry.applyMatrix4(matrix);
   source.dispose();
   return cleanGeometry;
+}
+
+function getCollisionPadding(mesh: THREE.Mesh) {
+  const padding = (mesh.userData as ColliderMeshUserData).collisionPadding;
+  return typeof padding === "number" && padding > 0 ? padding : 0;
+}
+
+function expandGeometryBounds(geometry: THREE.BufferGeometry, padding: number) {
+  if (padding === 0) return;
+  geometry.computeBoundingBox();
+  const bounds = geometry.boundingBox;
+  if (!bounds) return;
+
+  const size = bounds.getSize(new THREE.Vector3());
+  if (size.x === 0 || size.y === 0 || size.z === 0) return;
+
+  const center = bounds.getCenter(new THREE.Vector3());
+  const position = geometry.getAttribute("position");
+  const scale = new THREE.Vector3(
+    (size.x + padding * 2) / size.x,
+    (size.y + padding * 2) / size.y,
+    (size.z + padding * 2) / size.z
+  );
+  for (let index = 0; index < position.count; index++) {
+    position.setXYZ(
+      index,
+      center.x + (position.getX(index) - center.x) * scale.x,
+      center.y + (position.getY(index) - center.y) * scale.y,
+      center.z + (position.getZ(index) - center.z) * scale.z
+    );
+  }
+  position.needsUpdate = true;
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
 }
 
 export function hasColliderGeometryAffectingOptions(

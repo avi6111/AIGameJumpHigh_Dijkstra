@@ -13,7 +13,10 @@ export function addPlatform(
   z: number,
   material: THREE.Material
 ) {
-  group.add(box(name, size, [x, topY - size[1] / 2, z], material));
+  const platform= box(name, size, [x, topY - size[1] / 2, z], material);
+  platform.userData.collisionPadding = 0.15;
+  group.add(platform);
+  
 }
 
 export function cylinder(

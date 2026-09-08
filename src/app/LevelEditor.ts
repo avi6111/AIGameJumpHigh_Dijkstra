@@ -17,11 +17,11 @@ const EDITOR_MODES: Array<{
   { label: "Rotate", mode: "rotate" },
   { label: "Scale", mode: "scale" },
 ];
-
 export interface LevelEditorControls {
   edit(): void;
   save(): void;
   export(): void;
+  currentLevel: string;
 }
 
 export interface LevelEditor {
@@ -118,6 +118,13 @@ export function createLevelEditor({
         exportLevelState(level.exportState());
         overlay.setStatus("Exported");
       },
+      get currentLevel() {
+        return level.currentLevel;
+      },
+
+      set currentLevel(value: string) {
+        level.currentLevel = value;
+      },  
     },
     isEditing() {
       return editing;
@@ -249,3 +256,4 @@ function exportLevelState(json: string) {
   link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
+

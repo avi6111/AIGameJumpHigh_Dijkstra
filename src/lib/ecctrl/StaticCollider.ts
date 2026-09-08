@@ -46,9 +46,10 @@ export default class StaticCollider {
     applyObject3DOptions(object, options);
     this.rebuild();
   }
-
+  //#region 必然重建碰撞体
   rebuild() {
     this.disposeGenerated();
+    //根本没有写这个方法在哪里//ColliderUtils.ts :27-58
     const { geometry, temporaryMeshes } = buildMergedGeometry(
       this.object,
       this.options.BVHOptions

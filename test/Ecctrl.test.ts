@@ -50,6 +50,25 @@ test("StaticCollider rebuilds baked geometry when transform changes", () => {
   collider.dispose();
 });
 
+test("StaticCollider expands collision geometry without scaling the display mesh", () => {
+  resetColliderStore();
+  const root = createBoxColliderRoot();
+  const displayMesh = root.children[0] as THREE.Mesh;
+  displayMesh.userData.collisionPadding = 0.1;
+
+  const collider = new StaticCollider(root);
+  const displayBounds = new THREE.Box3().setFromObject(displayMesh);
+  const colliderBounds = new THREE.Box3().setFromObject(
+    requireColliderMesh(collider.mergedMesh)
+  );
+
+  assertApprox(displayBounds.min.x, -0.5);
+  assertApprox(displayBounds.max.x, 0.5);
+  assertApprox(colliderBounds.min.x, -0.6);
+  assertApprox(colliderBounds.max.x, 0.6);
+  collider.dispose();
+});
+
 test("KinematicCollider updates kinematic user data", () => {
   resetColliderStore();
   const root = createBoxColliderRoot();

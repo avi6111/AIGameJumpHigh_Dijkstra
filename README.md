@@ -2,27 +2,30 @@
 
 **English | [日本語](README.ja.md)**
 
-![VRM Game Starter screenshot](screenshot.png)
+![VRM Game Starter screenshot](image\修改意见\1788520151280.png)
 
-A beginner-friendly starter template for building 3D games with [VRM](https://vrm.dev/en/) avatars and [Three.js](https://threejs.org/) (WebGPU). Clone it, run one command, and you have a walkable character on a playable level — then make it your own.
+一个完整的跳跳乐，往向上条跳完整游戏 for building 3D games with [VRM](https://vrm.dev/en/) avatars and [Three.js](https://threejs.org/) (WebGPU). Clone it, run one command, and you have a walkable character on a playable level — then make it your own.
 
-No physics engine, no framework lock-in: plain TypeScript + Three.js, with fast triangle-accurate collision powered by [three-mesh-bvh](https://github.com/gkjohnson/three-mesh-bvh).
+No physics engine（其实是自己实现了一个墙体碰撞）, no framework lock-in（接入了一个Vite框架做结算界面，也是很简单的）: plain TypeScript（有利有弊的） + Three.js, with fast triangle-accurate collision powered by [three-mesh-bvh](https://github.com/gkjohnson/three-mesh-bvh).
 
 ## Features
 
-- 🧍 **VRM avatars** — loads VRM 0.x and VRM 1.0 models, with drag & drop to swap your avatar at runtime
-- 🏃 **Animation retargeting** — one shared animation library (idle / walk / run / jump / punch) retargeted onto any humanoid VRM
-- 🦶 **Foot IK** — feet stick to slopes and steps
-- 🎮 **Character controller** — floating-capsule controller with no physics engine, built on the [BVHEcctrl](https://github.com/pmndrs/BVHEcctrl) core (keyboard / gamepad / touch)
-- 🗺️ **In-app level editor** — move, rotate, and scale level objects in the browser, save to localStorage or export JSON
-- 🌅 **WebGPU rendering** — SSGI, ambient occlusion, bloom, cascaded shadow maps, and a dynamic sky
-- 🔍 **Inspector** — tweak rendering, shadows, sky, camera, and controller parameters live
-- ✅ **Tested** — the gameplay-critical math (IK, camera, retarget contracts, level state) is covered by unit tests
+二次开发，写了一写备注：
+
+- 🏃 **Animation retargeting** — one shared animation library (idle / walk / run / jump / punch) retargeted onto any humanoid VRM；只有简单的 Idle 和 Walk，加速还有跳步问题，请问这个动画系统是有多好呢
+- 🦶 **Foot IK** — feet stick to slopes and steps  脚步其实没用，如这个游戏的一些滚动碰到了主角也没有受击攻击，就算上楼梯做的在漂亮，玩家也没什么感受，也体会不到重力和动作的重量
+- 🎮 **Character controller** — floating-capsule controller with no physics engine, built on the [BVHEcctrl](https://github.com/pmndrs/BVHEcctrl) core (keyboard / gamepad / touch)；虽然说是人物控制器，但 BVH 的物理系统反而是不错，才是核心；
+- 🗺️ **In-app level editor** — move, rotate, and scale level objects in the browser, save to localStorage or export JSON；不怎么好用的编辑器，二次开发写了一个 Auto Connect
+- 🌅 **WebGPU rendering** — SSGI, ambient occlusion, bloom, cascaded shadow maps, and a dynamic sky; 真的吗？
+- 🔍 **Inspector** — tweak rendering, shadows, sky, camera, and controller parameters live；Threejs 的官方工具，能用，只是不知道怎么用
+- ✅ **Tested** — the gameplay-critical math (IK, camera, retarget contracts, level state) is covered by unit tests；自动化测试，暂时没管；
+- 🧍 **VRM avatars** — loads VRM 0.x and VRM 1.0 models, with drag & drop to swap your avatar at runtime；
 
 ## Requirements
 
-- [Node.js](https://nodejs.org/) 20 or newer
-- A browser with WebGPU support (recent Chrome or Edge recommended)
+- [Node.js](https://nodejs.org/) 20 (因为绑定 npm 工具, 需要 npm run dev)
+- A Browser (recent Chrome or Edge)手机都有浏览器，这不用说
+- Threejs，需各种 3d 引擎基础 ，无论商业引擎或开源，不论原生或者网页Webgl， 不一定只包括 Threejs；
 
 ## Quick Start
 
@@ -35,32 +38,14 @@ npm install
 npm run dev
 ```
 
-Open the printed URL (usually `http://localhost:5173`) and walk around.
+**测试 dict 方法**
 
-## Use Your Own Avatar
+```JavaScript
+cd dist
+npx serve .
+```
 
-Two ways:
-
-1. **Drag & drop** — drop any `.vrm` file onto the window. Works with VRM 0.x and VRM 1.0.
-2. **Replace the default** — overwrite [src/assets/sample.vrm](src/assets/sample.vrm) with your model (keep the filename, or update the URL in [AnimatedCharacterModel.ts](src/character/AnimatedCharacterModel.ts)).
-
-You can create your own avatar for free with [VRoid Studio](https://vroid.com/en/studio).
-
-## Controls
-
-| Input | Action |
-| --- | --- |
-| `W` `A` `S` `D` / arrow keys | Move |
-| `Shift` | Run |
-| `Space` | Jump |
-| Left click | Punch |
-| Mouse drag / wheel | Orbit & zoom camera |
-| Gamepad | Left stick move, right stick camera, buttons jump/punch/run |
-| Touch | Virtual joystick + buttons (shown automatically) |
-
-Open the **Inspector** panel (top-right) to tweak rendering and gameplay parameters, or use **Level → Edit** to enter the in-app level editor.
-
-## Project Structure
+## Project Structure(仅记录二次开发部分)
 
 ```
 index.html            Entry HTML (canvas, HUD, drop overlay)
@@ -82,27 +67,6 @@ src/
   assets/             Sample VRMs + animation library
 test/                 Unit tests (vitest)
 ```
-
-## Make It Yours
-
-| I want to… | Edit |
-| --- | --- |
-| Change walk/run speed, jump height | [src/app/Controller.ts](src/app/Controller.ts) (`createEcctrl` options) |
-| Build my own level | [src/app/LevelLayout.ts](src/app/LevelLayout.ts) — or use the in-app editor and export JSON |
-| Add moving platforms | [src/app/LevelGimmicks.ts](src/app/LevelGimmicks.ts) |
-| Change the camera feel | [src/app/CameraRig.ts](src/app/CameraRig.ts) |
-| Add new animations / actions | [src/assets/AnimationLibrary.glb](src/assets/AnimationLibrary.glb) + [src/character/AnimationContract.ts](src/character/AnimationContract.ts) |
-| Tune lighting, sky, post-processing | [src/scene/](src/scene), [src/render/](src/render) — or live in the Inspector |
-
-## Scripts
-
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Start the dev server |
-| `npm run build` | Production build into `dist/` |
-| `npm run preview` | Preview the production build |
-| `npm run typecheck` | TypeScript type check |
-| `npm test` | Run unit tests |
 
 ## Learning Resources
 
