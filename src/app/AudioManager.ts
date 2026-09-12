@@ -1,3 +1,4 @@
+//测试类，第一版；Audio.ts 那个类才是运行类；这个类没用的。。。
 import * as THREE from 'three';
 import { GUI } from 'lil-gui';//npm install lil-gui --legacy-peer-deps
 //I:\2026Unity\换龙骑战歌F盘\【完整-Unity3d】龙骑战歌\ProjectDevelopment\资源管理\Resources\sound\music

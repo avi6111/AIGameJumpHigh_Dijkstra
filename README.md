@@ -2,7 +2,7 @@
 
 **English | [日本語](README.ja.md)**
 
-![VRM Game Starter screenshot](image\修改意见\1788520151280.png)
+![VRM Game Starter screenshot](image/修改意见/1788520151280.png)
 
 一个完整的跳跳乐，往向上条跳完整游戏 for building 3D games with [VRM](https://vrm.dev/en/) avatars and [Three.js](https://threejs.org/) (WebGPU). Clone it, run one command, and you have a walkable character on a playable level — then make it your own.
 
@@ -12,10 +12,11 @@ No physics engine（其实是自己实现了一个墙体碰撞）, no framework 
 
 二次开发，写了一写备注：
 
+- **BVH Ecctrl** 才是重点吧， 实现了 **3d 物理系统**（平台 | 关卡旋转物 | ）
 - 🏃 **Animation retargeting** — one shared animation library (idle / walk / run / jump / punch) retargeted onto any humanoid VRM；只有简单的 Idle 和 Walk，加速还有跳步问题，请问这个动画系统是有多好呢
 - 🦶 **Foot IK** — feet stick to slopes and steps  脚步其实没用，如这个游戏的一些滚动碰到了主角也没有受击攻击，就算上楼梯做的在漂亮，玩家也没什么感受，也体会不到重力和动作的重量
 - 🎮 **Character controller** — floating-capsule controller with no physics engine, built on the [BVHEcctrl](https://github.com/pmndrs/BVHEcctrl) core (keyboard / gamepad / touch)；虽然说是人物控制器，但 BVH 的物理系统反而是不错，才是核心；
-- 🗺️ **In-app level editor** — move, rotate, and scale level objects in the browser, save to localStorage or export JSON；不怎么好用的编辑器，二次开发写了一个 Auto Connect
+- 🗺️ **In-app level editor** — move, rotate, and scale level objects in the browser, save to localStorage or export JSON；还是不错的**编辑器**（右上采选点“Edit"，基于Threejs的句柄），二次开发 **Auto Connect** （自动填充 B**ox|Platform** 避免无法到达终点)
 - 🌅 **WebGPU rendering** — SSGI, ambient occlusion, bloom, cascaded shadow maps, and a dynamic sky; 真的吗？
 - 🔍 **Inspector** — tweak rendering, shadows, sky, camera, and controller parameters live；Threejs 的官方工具，能用，只是不知道怎么用
 - ✅ **Tested** — the gameplay-critical math (IK, camera, retarget contracts, level state) is covered by unit tests；自动化测试，暂时没管；
@@ -44,6 +45,13 @@ npm run dev
 cd dist
 npx serve .
 ```
+
+更新日志
+
+**v0.4** 2026/9/13
+
+* **修复了引用和代码错误提示**
+* **增加结算 + 错误 2个页面**
 
 ## Project Structure(仅记录二次开发部分)
 

@@ -1,6 +1,7 @@
 import * as THREE from "three/webgpu";
 import {type PlatformData, PLAYER_PHYSICS } from "./iPlatformData"; // 一次性引入接口和常量
-import { autoBridgePlatforms } from "./LevelAuto";
+import { autoBridgePlatforms, drawFinalFlag } from "./LevelAuto";
+import type { LevelConfig } from "../LevelConfig";
 
 /**
  * LevelValidator 用于验证关卡中各个平台之间的连通性。
@@ -28,15 +29,15 @@ if (!isReachable) {
 
 export class LevelValidator {
   private platforms: PlatformData[] = [];
-  private scene: THREE.Scene;
+  private scene: THREE.Scene = new THREE.Scene();
 
   // 玩家物理参数
   private readonly MAX_JUMP_HEIGHT = 1.5;   
   private readonly MAX_FALL_DEPTH = 5.0;    
   private readonly MAX_GAP_DISTANCE = PLAYER_PHYSICS.MAX_GAP_DISTANCE;  
   
-  constructor(scene: THREE.Scene) {
-    this.scene = scene;//可以传一个null 进来（如果这么写）
+  constructor(scene?: THREE.Scene) {
+    if (scene) this.scene = scene;
   }
 
   public collectPlatforms(scene: THREE.Scene) {
@@ -64,16 +65,21 @@ export class LevelValidator {
       }
     });
   }
-
+  //#region Validate + Layout
   /**
    * 核心验证方法：带可视化的 BFS 寻路
+   * @param startName 玩家生成点
+   * @param goalName 终点
    */
-  public validate(startName: string, goalName: string): boolean {
+  public validate(startName: string, goalName: string,lc: LevelConfig,rPlusPath: PlatformData[]): boolean {
+    
+
+    if(!lc) return false;
     const startNode = this.platforms.find(p => p.name === startName);
-    const goalNode = this.platforms.find(p => p.name === goalName);
+    const goalNode = this.platforms.find(p => p.name === goalName || p.name === lc.finishName);
 
     if (!startNode || !goalNode) {
-      console.error(`[Validator] 找不到起点 "${startName}" 或终点 "${goalName}"`);
+      console.error(`[Validator] 找不到起点 "${startName}" 或终点 "${goalName}|${lc.finishName}"`);
       return false;
     }
 
@@ -123,15 +129,20 @@ export class LevelValidator {
       this.drawPath(treeEdges, 0xffff00); // 黄色代表探索过的可行分支
     }
 
-    // 如果没到达终点
+    //----------  如果"没到"达终点 --------------------------
     if (!visited.has(goalName)) {
-      console.error(`[Validator] ❌ 连通性验证失败: 无法从 "${startName}" 到达 "${goalName}"`);
-      //this.generatePathLabels(this.findFarthestEndpoints(startName));
-      this.generatePathLabels(this.calPlatforms(startName));
-      return false;
+      console.error(`[Validator] ❌ 连通性验证失败: 无法从 "${startName}" 到达 "${goalName}"`)
+      //this.generatePathLabels(this.findFarthestEndpoints(startName))
+      //---------- 会"补上" 终点
+      const fixePath = this.calAgenPlatforms(startName,lc )
+      this.generatePathLabels(fixePath)
+      this.createLabel("End", fixePath.at(-1)!.position)
+      //return false;
+      rPlusPath.push(... fixePath)
+      return fixePath.length>0
     }
 
-    // 如果到达了终点，提取并绘制最短路径（绿色）
+    //------------------ 如果"到达了"终点，提取并绘制最短路径（绿色）------------
     const orderedPath: PlatformData[] = [];
     let currentName: string | undefined = goalName;
     while (currentName) {
@@ -143,7 +154,8 @@ export class LevelValidator {
     console.log(`[Validator] ✅ 连通性验证成功，最短路径节点数: ${orderedPath.length}`);
     this.generatePathLabels(orderedPath); // 生成 1, 2, 3 标签
     this.drawPath(this.getPathEdges(orderedPath), 0x00ff00); // 绘制绿色最短路径
-
+    
+    this.createLabel("End", orderedPath.at(-1)!.position);
     return true;
   }
   /**
@@ -166,6 +178,7 @@ export class LevelValidator {
 
     return edges;
   }
+  
 
   /**
    * 根据有序路径提取边（用于绘制绿色最短路径）
@@ -178,20 +191,42 @@ export class LevelValidator {
     return edges;
   }
 
+  //#region 编号 Label
+  private numberTextureCache = new Map<string, THREE.Sprite>();
+  private createLabel(numberStr: string,position: THREE.Vector3) {
+    let sprite = this.numberTextureCache.get(numberStr);
+    if(!sprite)
+    {
+      sprite = this.createNumberSprite(numberStr);
+      this.numberTextureCache.set(numberStr, sprite);
+    }
+    //sprite.name = `path-label-${index}`;
+    sprite.position.set(
+      position.x, 
+      position.y + 1.5, 
+      position.z
+    );
+    this.scene.add(sprite);
+  }
   /**
-   * 🔑 新增：生成路径标签的方法
+   * 🔑  新增：生成路径标签的方法
    */
   private generatePathLabels(path: PlatformData[]) {
-    console.log('ff orderedPath=',path.length)
+    // console.log('ff orderedPath=',path.length)
     // 清理旧的标签（可选）
     const oldLabels = this.scene.children.filter(c => c.name.startsWith('path-label-'));
     oldLabels.forEach(l => this.scene.remove(l));
 
     path.forEach((platform, index) => {
-      console.log("fffff each")
       // 这里可以调用你之前选择的 CSS2DRenderer 或 Sprite 方案
       // 例如使用 Sprite：
-      const sprite = this.createNumberSprite(index + 1);
+      const numberStr = (index + 1).toString();
+      let sprite = this.numberTextureCache.get(numberStr);
+      if(!sprite)
+      {
+        sprite = this.createNumberSprite(numberStr);
+        this.numberTextureCache.set(numberStr, sprite);
+      }
       sprite.name = `path-label-${index}`;
       sprite.position.set(
         platform.position.x, 
@@ -201,7 +236,7 @@ export class LevelValidator {
       this.scene.add(sprite);
     });
   }
-  private createNumberSprite(number: number): THREE.Sprite {
+  private createNumberSprite(numberStr: string): THREE.Sprite {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
     canvas.width = 64;
@@ -218,7 +253,7 @@ export class LevelValidator {
     ctx.font = 'Bold 40px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(number.toString(), 32, 32);
+    ctx.fillText(numberStr, 32, 32);
 
     const texture = new THREE.CanvasTexture(canvas);
     const material = new THREE.SpriteMaterial({ map: texture, depthTest: false }); // depthTest: false 防止被遮挡
@@ -273,10 +308,19 @@ export class LevelValidator {
   }
 
   //#region 全新计算各方块 ------------------------------------
-  public calPlatforms(startName: string,isplus:boolean = false){
+  /**
+   * 这个方法会不断找最远的点，所以在最后一个结束点 “方块”，也不错
+   * @param startName 
+   * @param isplus 
+   * @returns 
+   */
+  public calAgenPlatforms(startName: string, lc: LevelConfig, isplus:boolean = false):PlatformData[]{
     const startNode = this.platforms.find(p => p.name === startName);
     
-    if(!startNode) return [];
+    if(!startNode) {
+      console.log(`起点名字 "${startName}" 找不到, 无法全新计算和生成 Platform`);
+      return [];
+    }
     // 记录按顺序找到的平台
     const orderedPath: PlatformData[] = [startNode];
     const visited = new Set<string>();
@@ -287,9 +331,11 @@ export class LevelValidator {
       let minDist = Infinity;
       let nearestPlatform: PlatformData | null = null;
       let nearestVisitedName: string | null = null;
+      let count =0;
       for (const neighbor of this.platforms) {
         if (visited.has(neighbor.name)) continue;
-
+        console.log(`name= ${neighbor.name} curr=${count} total=${this.platforms.length}`);
+        count++;  
         for(const visitedName of visited) {
           const visitedNode = this.platforms.find(p => p.name === visitedName);
           const dist = neighbor.position.distanceTo(visitedNode!.position);
@@ -301,7 +347,8 @@ export class LevelValidator {
         }
       }
       // 3. 如果找不到更近的平台，说明探索结束
-      if (!nearestPlatform) break;
+      if (!nearestPlatform) break;  
+      // 4. 自行补上 方块
       autoBridgePlatforms(this.scene,
          orderedPath.at(-1)!, nearestPlatform);
       // 5. 将找到的最近平台加入已访问集合，并记录到路径中
@@ -310,6 +357,12 @@ export class LevelValidator {
     }
 
     console.log(`[Validator] 🏁 最近路径探索完成，共连接 ${orderedPath.length} 个平台 total=${this.platforms.length}`);
+    
+    const endTarget = orderedPath.find(item => item.name === lc.finishName);
+    if(!endTarget) {//4.1 补上，终点的 “方块”
+      console.log(`------终点名字---- "${lc.finishName}" 找不到 f---->已创建一个终点 Box name=${orderedPath.at(-1)!.name}`);
+      drawFinalFlag(this.scene,  orderedPath.at(-1)!);
+    }
     return orderedPath;
   }
   //#region BFS 图计算
@@ -318,7 +371,12 @@ export class LevelValidator {
    */
   public findFarthestEndpoints(startName: string): PlatformData[] {
     const startNode = this.platforms.find(p => p.name === startName);
-    if (!startNode) return [];
+    if (!startNode)
+    { 
+      console.log(`起点名字 "${startName}" 找不到, 无法自动生成 Platform`);
+      return [];
+
+    }
 
     const visited = new Set<string>();
     const queue: PlatformData[] = [startNode];
@@ -354,6 +412,7 @@ export class LevelValidator {
     });
 
     console.log(`[Validator] 🎯 从 "${startName}" 出发，找到 ${endpoints.length} 个最远支点`);
+
     return endpoints;
   }
   /**

@@ -85,6 +85,7 @@ export interface CharacterStatus {
   isOnGround: boolean;
   isOnMovingPlatform: boolean;
   animationStatus: CharacterAnimationStatus;
+  lastPos: THREE.Vector3 | undefined;
 }
 
 export interface EcctrlSettings {

@@ -126,6 +126,7 @@ export function createInspector({
   createShadowParameters(inspector, shadowControls, characterShadowControls);
 
   inspector.setActiveTab(inspector.parameters);
+  inspector.hide();
 
   return {
     dispose() {
@@ -151,7 +152,7 @@ function createLevelParameters(
   controls: LevelEditorControls
 ) {
   const group = inspector.createParameters("Level");
-  group.add(controls, "currentLevel").name("当前关卡");
+  group.add(controls, "currentLevel").name("当前关卡(从0开始)");
   group.add(controls, "edit").name("Edit");
   group.add(controls, "save").name("Save");
   group.add(controls, "export").name("Export");

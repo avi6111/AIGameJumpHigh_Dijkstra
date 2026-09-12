@@ -21,7 +21,16 @@ export function handleCollisionResponse(
     }
   }
 }
-
+/**通过向下的射线或形状投射（ShapeCast）探测地面，利用“弹簧-阻尼（Spring-Damper）”物理模型
+ * 来平滑角色与地面的贴合，同时处理坡度限制和跳跃打断。
+ * @param state 重要，它会读取 state.velocity（当前速度）、
+ *    state.position（当前位置）、
+ *    state.colliderHeight（胶囊高度）等，用来判断角色是在空中还是地上
+ * @param colliderMeshesArray 
+ * @param jump 
+ * @param delta 
+ * @returns 
+ */
 export function handleFloatingResponse(
   state: BVHEcctrlState,
   colliderMeshesArray: THREE.Mesh[],
@@ -89,7 +98,7 @@ export function handleFloatingResponse(
       }
     }
   };
-
+  //#region useRaycastCheck 和 RayCast 两方法
   switch (state.options.floatCheckType) {
     case "RAYCAST":
       useRaycastCheck();
@@ -104,11 +113,15 @@ export function handleFloatingResponse(
 
   if (state.globalMinDistance < Infinity) {
     if (state.globalMinDistance < state.options.floatHeight + state.capsuleRadius) {
+      // 1. 确认贴地
       state.isOnGround = true;
       state.isFalling = false;
-      jump = false;
+      jump = false;// 贴地时强制取消跳跃意图（防止在地面上触发跳跃）
     }
     if (!jump) {
+      // 2. 计算弹簧形变量 (springDist)
+      // 目标高度 = floatHeight + capsuleRadius
+      // 实际高度 = 胶囊起点到地面的投影距离
       state.floatHitVec.subVectors(
         state.floatSensorSegment.start,
         state.globalClosestPoint
@@ -117,16 +130,20 @@ export function handleFloatingResponse(
         state.options.floatHeight +
         state.capsuleRadius -
         state.floatHitVec.dot(state.upAxis);
-      const springForce = state.options.floatSpringK * springDist;
+      // 3. 胡克定律：F = k * x
+      const springForce = state.options.floatSpringK * springDist;//经典的弹簧-阻尼器（Spring-Damper）模型。
+      // 4. 阻尼力：F = -c * v
       const dampingForce =
         state.options.floatDampingC * state.currentLinVel.dot(state.upAxis);
+      // 5. 牛顿第二定律：a = F / m，然后 v += a * dt
       if (state.isOnGround) {
-        state.currentLinVel.addScaledVector(
+        state.currentLinVel.addScaledVector(//积分求解（牛顿第二定律）v = v_0 + a⋅t ;
           state.upAxis,
           ((springForce - dampingForce) * delta) / state.options.mass
         );
       }
     } else {
+      // 6. 如果正在跳跃，强制脱离地面
       state.isOnGround = false;
     }
   } else {

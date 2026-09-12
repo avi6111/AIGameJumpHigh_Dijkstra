@@ -226,6 +226,10 @@ export function updateCharacterStatus(
     useAnimationStore.getState().setAnimationStatus(characterStatus.animationStatus);
     state.prevAnimation = characterStatus.animationStatus;
   }
+  //#region 二次开发记录 Jump
+  if (state.prevIsOnGround && jump)  {
+    characterStatus.lastPos = characterStatus.position.clone();
+  }
 }
 
 export function applyMovementInput(

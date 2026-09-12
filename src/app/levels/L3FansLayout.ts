@@ -36,6 +36,7 @@ export function createLevelLayout(scene: THREE.Scene) {
   scene.add(group);
   return group;
 }
+
 function createLevelMaterialsMulti() {
   return {
     floor: createLevelMaterial(0xe98ab6),

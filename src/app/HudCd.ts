@@ -7,6 +7,8 @@ export interface HudCdState {
     elapsedSeconds: number;
     remainingSeconds: number;
     isActive: boolean;
+
+    //currLevel:number;
 }
 
 export interface HudCd {
@@ -15,7 +17,6 @@ export interface HudCd {
     update(elapsed: number): void;
     getState(): HudCdState;
 }
-
 export function createCountDownHud(element:HTMLElement | null): HudCd {
     let totalSeconds = 0;
     let remainingSeconds = 0;
@@ -78,6 +79,7 @@ export function createCountDownHud(element:HTMLElement | null): HudCd {
             elapsedSeconds: totalSeconds - remainingSeconds,
             remainingSeconds,
             isActive,
+
         };
     }
 

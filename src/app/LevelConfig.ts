@@ -23,7 +23,8 @@ export const levelConfigs: LevelConfig[] = [
     finishName: "crown-podium",
     spawnName: "",
     timeLimit: 90,
-    sceneStr: "./levels/L2SliderLayout"
+    //sceneStr: "./levels/L2SliderLayout"
+    sceneStr: "./levels/L2TestImport"
   },
   {
     title: "level 3",

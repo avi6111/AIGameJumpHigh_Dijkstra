@@ -30,17 +30,23 @@ export class AudioInspector {
     this.audioLoader = new THREE.AudioLoader();
     this.sound = new THREE.Audio(this.listener);
 
+    
     // 2. 恢复上次保存的状态
     this.restoreState();
-
+    //#region Tweakpanel 的 UI 创建
     // 3. 创建 Tweakpane 面板
     this.pane = new Pane({ title: '🎵 音乐模块 Inspector' });
-    
+    // 也可以直接设置折叠/展开
+    this.pane.expanded = false;  // 折叠
     // 添加按钮
     this.pane.addButton({ title: '▶ 播放1' }).on('click', () => this.playAudio());
     this.pane.addButton({ title: '⏸ 暂停' }).on('click', () => this.pauseAudio());
     this.pane.addButton({ title: '📂 导入本地 BGM' }).on('click', () => this.loadLocalBGM());
-    
+    // this.pane.on('fold', (ev) => {
+    //   console.log(ev.expanded ? '展开' : '已折叠');
+    //   // 你可以在这里同步图标状态，比如：
+    //   // this.updateIconVisibility();
+    // });
     // 添加音量滑块
     this.pane.addBinding(this.state, 'volume', { 
       label: '音量', 
@@ -158,6 +164,16 @@ export class AudioInspector {
   private injectCustomStyles() {
     const style = document.createElement('style');
     style.innerHTML = `
+    /* 1. 核心：将面板改为普通定位，取消默认的 fixed，实现居中 */
+    .tp-dfwv {
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      margin: 20px auto !important; /* 上边距 20px，水平居中 */
+      width: fit-content !important; /* 宽度根据内容自适应 */
+      z-index: 9999 !important;
+    }
+
       /* 1. 默认隐藏旋转图标 */
       .tp-rotating-icon { 
         display: none !important; 

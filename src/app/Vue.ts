@@ -7,11 +7,41 @@ import { createApp, type App as VueApp } from 'vue';
 //import VResult from './VResultOverlay.vue'
 import VResult from './VResultWinX.vue'
 import type { HudCdState } from './HudCd';
+import VNoLevelConfig from './vlayouts/VNoLevelConfig.vue';
 
 let app: VueApp | null = null;
 let mountEl: HTMLElement | null = null;
 let isShowing = false;
+let isShowMissing = false;
+export function showMissLevelCfg()
+{
+    if(isShowMissing) return;
 
+    const mainElement = document.getElementById('main') || document.getElementById('root');
+
+    mountEl = document.createElement('div');
+    mountEl.id = 'vue-settlement-mount';
+    mainElement?.parentNode?.insertBefore(mountEl, mainElement);//这行代码重要
+    //app = createApp(VNoLevelConfig, {});
+    app = createApp(VNoLevelConfig, {
+        onClose: () => hideMissLevelCfg()
+    });
+    app.mount(mountEl)
+
+    isShowMissing = true;
+}
+
+export function hideMissLevelCfg() {
+    if (app) {
+        app.unmount();
+        app = null;
+    }
+    if (mountEl && mountEl.parentNode) {
+        mountEl.parentNode.removeChild(mountEl);
+        mountEl = null;
+    }
+    isShowMissing = false;
+}
 export function showSettlement(options?: {
     countdownState?: HudCdState;
     onRestart?: () => void;
@@ -56,9 +86,14 @@ export function showSettlement(options?: {
     mountEl.id = 'vue-settlement-mount';
     //document.body.appendChild(mountEl);
     mainElement?.parentNode?.insertBefore(mountEl, mainElement);
-
+    //#region 创建 VREsult 这个UI （例如 VResultWinX.vue) #组件
     app = createApp(VResult, {
-        countdownState: options?.countdownState,
+        level:2,
+        //stars: 3,
+        //steps: 128,
+        //score: 256,
+    
+        countdownState: options?.countdownState,//countdownState 会处理 “ stars：3”
         onRestart: () => {
             hideSettlement();
             options?.onRestart?.();

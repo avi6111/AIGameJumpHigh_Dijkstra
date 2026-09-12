@@ -9,6 +9,7 @@
 资源清理	            dispose() 释放内存
  * 
  */
+console.time('xxxmain 流程')
 import * as THREE from "three/webgpu";
 import BVHEcctrl, { StaticCollider } from "../lib/ecctrl/index";
 import { disposeObject3D } from "../lib/ecctrl/Object3DUtils";
@@ -32,50 +33,67 @@ import { LevelValidator } from "./levels/LevelValidator";
 import { addPlatform } from "./LevelPrimitives";
 import { createLevelMaterial } from "./LevelMaterials";
 //import type { AnimatedCharacterModel } from "../character/AnimatedCharacterModel";
+import {fixStartPlatform} from "./levels/LevelAuto";
+import type { PlatformData } from "./levels/iPlatformData";
+import type { Number } from "three/examples/jsm/transpiler/AST.js";
 
+
+console.timeEnd('xxxmain 流程')
 const CURRENT_LEVEL_STORAGE_KEY = "vrm-game-starter.current-level";
 let g_lc:LevelConfig;
 let g_currLevel:number;
+// 全局单例：当前激活的 Level 实体，供跨层级模块（如 Vue 组件）直接获取，无需逐层传递 props。
+let g_activeLevel: Level | undefined;
+export function getActiveLevel(): Level | undefined {
+  return g_activeLevel;
+}
 let cachedLayoutFn: ((scene: THREE.Scene) => THREE.Group) | null = null;
-// 提供一个预加载函数，在异步阶段调用
-export async function preloadLevelLayout() {
+// 提供一个预加载函数，在异步阶段调用；返回 false 表示当前关卡配置缺失，供调用方弹出提示
+export async function preloadLevelLayout(): Promise<boolean> {
   let currentLevel = readCurrentLevel();
-  g_currLevel = parseInt(currentLevel);
-  g_lc = levelConfigs[parseInt(currentLevel)];
+  g_currLevel = currentLevel;
+  g_lc = levelConfigs[currentLevel];
+  // sceneStr 在类型上是必填；真正要防的是 levelConfigs 下标越界导致 g_lc 为 undefined
+  //if ('sceneStr' in g_lc) {
+  if (!g_lc || !g_lc.sceneStr) {
+    console.error("Level config missing: levelConfigs[" + currentLevel + "] has no sceneStr");
+    return false;
+  }
   if (!cachedLayoutFn) {
     try
     {
-      const module = await import(g_lc.sceneStr);
+      console.timeLog('main 流程',`s1-1 |level=${currentLevel}|s=${g_lc.sceneStr}`);
+      //const module = await import(g_lc.sceneStr);
       //const module = await import('./LevelLayout');
-      cachedLayoutFn = module.createLevelLayout;
+      console.timeLog('main 流程','s1-2');
+      //cachedLayoutFn = module.createLevelLayout;
     }
     catch(error)
     {
       console.error("Failed to preload level layout:", error);
-      //TODO 错误提示 “需改 Level ”的图文
+      return false;
     }
   }
+  return true;
 }
 // 提供一个同步获取函数
 export function getLevelLayout(scene: THREE.Scene): THREE.Group {
+  //#region 如果没有开始点。。
   if (!cachedLayoutFn) {
     //throw new Error("模块未加载！请先调用 preloadLevelLayout()");
     console.log("模块未加载！请先调用 preloadLevelLayout()");
-    return createDefaultPlatform(scene);
+    return fixStartPlatform(scene);
   }
   return cachedLayoutFn(scene);
+  //#endregion
 }
-function createDefaultPlatform(scene: THREE.Scene):THREE.Group{
-  const group = new THREE.Group();
-  const floor = createLevelMaterial(0xe98ab6)
-  addPlatform(group, "start-deck", [14, 1, 10], 0, 0, 10, floor);
-  const s = new StaticCollider(group, { scene, bvhName: "level" });
-  return group; 
-}
+
+
 export interface Level {
   applyState(state: LevelState): LevelApplyResult;
   captureState(): LevelState;
-  currentLevel: string;
+  currentLevel: number;
+  finalFlag: THREE.Object3D| undefined
   exportState(): string;
   getEditorTargets(): readonly LevelStateTarget[];
   loadSavedState(storage?: Storage | null): LevelApplyResult | null;
@@ -86,26 +104,50 @@ export interface Level {
   triggerWin(): void;
 }
 
+export interface LevelOptions {
+  onWin?: () => void;
+}
 
-export function createLevel(scene: THREE.Scene,ctl:BVHEcctrl): Level {
+//#region 主要逻辑
+export function createLevel(
+  scene: THREE.Scene,
+  ctl: BVHEcctrl,
+  options: LevelOptions = {},
+): Level {
+  console.timeLog('main 流程','fff')
   //const level = createLevelLayout(scene);//好像是关卡样板，，Group{}
   const level = getLevelLayout(scene);
   
-  const v = new LevelValidator(null);
+  const v = new LevelValidator(scene);
   v.collectPlatforms(scene);
-  const isReachable = v.validate("start-deck", "goal-deck"); 
+  let plusPathes: PlatformData[]=[];
+  const isReachable = v.validate("start-deck", "goal-deck",g_lc,plusPathes); //增加, 关卡补充板 | box
+
   if (!isReachable) {
     // 可以在游戏里弹出一个巨大的红色警告，或者暂停游戏
-    alert("⚠️ 关卡设计错误：玩家无法到达终点！请检查中间缺失的平台。");
+    alert("⚠️ 关卡设计错误 x2：玩家无法到达终点！请检查中间缺失的平台。");
   }
   
-  
-  const finishLine = scene.getObjectByName(g_lc?.finishName);
-  console.log('level 是？',level,finishLine)
+  let finishLine:any = null;
+  if(plusPathes.length>0) //有些绕的逻辑，，，，，，，终点最终取，补充的先；如没有补充，才按最原始的执行。。。。。
+  {
+    
+    const finalName =  plusPathes.at(-1)!.name;
+    finishLine = scene.getObjectByName(finalName);
+    //console.log("终点0 SET ",finishLine.name)
+  }else
+  {
+    finishLine = scene.getObjectByName(g_lc?.finishName);
+    if(finishLine==null)
+      finishLine = scene.getObjectByName("goal-deck");
+    //console.log("终点1 SET ",finishLine.name)
+  }
+  //console.log('level 的终点是 ？',finishLine)
   const cctl = ctl
   const staticCollider = new StaticCollider(level, { scene, bvhName: "level" });
   const actors = createKinematicActors(scene);
   let editMode = false;
+  let hasWon = false;
   let staticColliderDirty = false;
   const markStaticColliderDirty = () => {
     staticColliderDirty = true;
@@ -132,13 +174,13 @@ export function createLevel(scene: THREE.Scene,ctl:BVHEcctrl): Level {
     captureState() {
       return createLevelState(editorTargets);
     },
-    get currentLevel() {
-      return String(g_currLevel);
-    },
+    get currentLevel() {return Math.trunc(g_currLevel)},
     set currentLevel(value) {
-      g_currLevel = parseInt(value);
-      saveCurrentLevel(value);
+      g_currLevel = value
+      saveCurrentLevel(value)
     },
+    get finalFlag(){return finishLine;},
+    set finalFlag(value){finishLine = value;},
     exportState() {
       return serializeLevelState(handle.captureState());
     },
@@ -179,14 +221,22 @@ export function createLevel(scene: THREE.Scene,ctl:BVHEcctrl): Level {
         actor.update(delta, elapsed);
         actor.collider.update(delta);
       }
+      //#region 胜利，关卡结算
+      // 旗子飘动 Mat 需要； 低端才需要，现在webGl 不需要；
+      // // 更新场景中带有 uTime 的自定义材质动画
+      // scene.traverse((obj) => {
+      //   if (obj instanceof THREE.Mesh && obj.material?.userData?.customUniforms?.uTime) {
+      //     obj.material.userData.customUniforms.uTime.value = elapsed;
+      //   }
+      // });
+
       const position = cctl.group?.position ?? null;
-      //console.log(cctl)
-      //console.log(cctl.group)
-      // 打印和终点距离
+      // // 打印和终点距离
       // if(finishLine)
-      //   console.log('pos=', position,position.distanceTo(finishLine.position))
-      if (finishLine && position && position.distanceTo(finishLine.position) < 2) {
+      //   console.log('终点 pos=', position," 距离=",position.distanceTo(finishLine.position))
+      if (!hasWon && finishLine && position && position.distanceTo(finishLine.position) < 3.8) {
         this.triggerWin();
+        //搜索用:showSettlement
       }
     },
     dispose() {
@@ -198,11 +248,14 @@ export function createLevel(scene: THREE.Scene,ctl:BVHEcctrl): Level {
       removeAndDispose(level);
     },
     triggerWin(){
+      hasWon = true;
       console.log('win');
+      options.onWin?.();
     },
   };
 
   handle.loadSavedState();
+  g_activeLevel = handle;
   return handle;
 }
 
@@ -238,13 +291,14 @@ function getBrowserStorage() {
   }
 }
 
-function readCurrentLevel() {
-  return getBrowserStorage()?.getItem(CURRENT_LEVEL_STORAGE_KEY) ?? "0";
+function readCurrentLevel():number {
+  const s  =getBrowserStorage()?.getItem(CURRENT_LEVEL_STORAGE_KEY);
+  return parseInt(s!) || 0;
 }
 
-function saveCurrentLevel(value: string) {
+function saveCurrentLevel(value: number) {
   try {
-    getBrowserStorage()?.setItem(CURRENT_LEVEL_STORAGE_KEY, value);
+    getBrowserStorage()?.setItem(CURRENT_LEVEL_STORAGE_KEY, String(value));
   } catch {
     console.warn("Unable to save the current level to localStorage.");
   }

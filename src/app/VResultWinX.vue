@@ -70,6 +70,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import type { HudCdState } from './HudCd';
+import { getActiveLevel } from './Level';
 
 function getStar(ratio:number): number {
   // 限制输入 0‑1
@@ -83,8 +84,8 @@ function getStar(ratio:number): number {
 // ============ Props ============
 const props = defineProps<{
   countdownState?: HudCdState;
-  level?: number;        // 🆕 当前关卡号
-  stars?: number;
+  //level?: number;        // 🆕 当前关卡号
+  //stars?: number;
   steps?: number;
   score?: number;
   time?: string;
@@ -100,8 +101,8 @@ if(props.countdownState?.totalSeconds)
   calStar = getStar(1-ratio);
 }
  
-const level = props.level ?? 1;
-const filledStars = props.stars ?? calStar;
+const level = (getActiveLevel()?.currentLevel ?? -9) + 1;
+const filledStars =  calStar;
 const steps = props.steps ?? 128;
 const score = props.score ?? 256;
 const time = props.time ?? formatCountdown(props.countdownState);

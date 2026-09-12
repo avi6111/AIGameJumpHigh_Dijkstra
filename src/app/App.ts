@@ -17,6 +17,7 @@ import { createLevelEditor } from "./LevelEditor";
 import { createCountDownHud } from "./HudCd";
 import type { HudCdState } from "./HudCd";
 import levelConfigs from "./LevelConfig";
+import { hideSettlement, showSettlement,showMissLevelCfg } from "./Vue";
 
 import { AudioInspector } from './Audio'; // 引入封装好的类
 const IDLE_MOVEMENT_INPUT: MovementInput = {
@@ -64,7 +65,8 @@ export function createApp({
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-
+  //#region log 全流程耗时
+  console.time('全流程耗时');
   // 2. 初始化音频 Inspector（传入相机即可）
   const audioInspector = new AudioInspector(camera);
 
@@ -80,8 +82,23 @@ export function createApp({
     warmUp: warmUpCharacterModel,
   });
   //console.log(controllerRig)
-  const level = createLevel(scene,controllerRig.controller);
-  countdownHud.start(levelConfigs[parseInt(level.currentLevel)]?.timeLimit ?? 70); // 70秒倒计时
+  const level = createLevel(scene, controllerRig.controller, {
+    onWin: () => {
+      countdownHud.getState()
+      showSettlement({
+        countdownState: countdownHud.getState(),
+        onRestart: () => mResetPlayer(),
+        onNextLevel: () => {
+          //hideSettlement()
+          //characterStatus.lastPos = undefined
+          level.currentLevel +=1
+          //mResetPlayer()
+          location.reload()
+        },
+      });
+    },
+  });
+  countdownHud.start(levelConfigs[level.currentLevel]?.timeLimit ?? 70); // 70秒倒计时
   let sampleVrmIndex = 0;
   const characterFileControls = {
     loadVrmFile: () => {
@@ -93,6 +110,7 @@ export function createApp({
       characterRuntime.loadUrl(sample.url, sample.name);
     },
   };
+  console.timeLog('全流程耗时', '第一阶段完成');
   const vrmDropTarget = createVrmDropTarget({
     overlay: vrmDropOverlay,
     onFile: (file) => characterRuntime.loadFile(file),
@@ -133,7 +151,7 @@ export function createApp({
   let inputLockedByLevelEditor = false;
   let pendingInitialShadowRebuild = true;
   let simulationElapsed = 0;
-
+  console.timeEnd('全流程耗时');
   const render = () => {
     const delta = Math.min(clock.getDelta(), 1 / 30);
     simulationElapsed += delta;
@@ -192,13 +210,25 @@ export function createApp({
     },
     dispose,
     resetPlayer() {
-      controllerRig.resetPlayer();
+      mResetPlayer();
     },
     getCountdownState() {
       return countdownHud.getState();
     },
   };
-
+  //#region reborn 重生
+  function mResetPlayer(){
+    console.log('lastPos=',characterStatus.lastPos)
+    if(characterStatus.lastPos==null)
+    {
+      controllerRig.resetPlayer();
+    }else
+    {
+      const controller = controllerRig.controller;
+      controller.group.position.copy(characterStatus.lastPos);
+      controller.resetLinVel();
+    }
+  }
   async function startRendering() {
     hud.setStatusText("INITIALIZING RENDERER");
     try {
@@ -251,7 +281,8 @@ export function createApp({
     controller.setMovement(controllerRig.movementInput);
     controller.update(delta, elapsed);
     if (controller.group.position.y < -8) {
-      controllerRig.resetPlayer();
+      //controllerRig.resetPlayer();
+      mResetPlayer();
     }
     hud.update(elapsed, () => {
       const characterStatusMessage = characterRuntime.getStatusMessage(elapsed);

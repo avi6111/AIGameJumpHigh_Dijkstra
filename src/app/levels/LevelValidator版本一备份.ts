@@ -69,6 +69,7 @@ export class LevelValidator {
 
   /**
    * 核心验证方法：带可视化的 BFS 寻路
+   * @param goalName 终点；（后来还添加了LevelConfig 第3个参数）
    */
   public validate(startName: string, goalName: string): boolean {
     const startNode = this.platforms.find(p => p.name === startName);
@@ -134,14 +135,14 @@ export class LevelValidator {
       //   console.warn("mo 根本没有 [Validator] ⚠️ 当前没有平台数据");
       // }
     }
-    console.log('ffffffffffff')
+    
     // 🔑 核心修改：如果终点不在 visited 中，说明无路可走
     if (!visited.has(goalName)) {
       console.error(`[Validator] ❌ 连通性验证失败: 无法从 "${startName}" 到达 "${goalName}" count=${validEdges.length}`);
       this.drawPath(validEdges, 0x00ff00); // 即使失败，也画出已经探索到的绿色部分
       return false;
     }
-    console.log('fffffff')
+    
     // 🔑 核心修改：从终点向起点回溯，还原完整路径
     const orderedPath: PlatformData[] = [];
     let currentName: string | undefined = goalName;
@@ -162,13 +163,13 @@ export class LevelValidator {
    * 🔑 新增：生成路径标签的方法
    */
   private generatePathLabels(path: PlatformData[]) {
-    console.log('ff orderedPath=',path.length)
+    //console.log('ff orderedPath=',path.length)
     // 清理旧的标签（可选）
     const oldLabels = this.scene.children.filter(c => c.name.startsWith('path-label-'));
     oldLabels.forEach(l => this.scene.remove(l));
 
     path.forEach((platform, index) => {
-      console.log("fffff each")
+      
       // 这里可以调用你之前选择的 CSS2DRenderer 或 Sprite 方案
       // 例如使用 Sprite：
       const sprite = this.createNumberSprite(index + 1);

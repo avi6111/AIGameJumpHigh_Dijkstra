@@ -19,7 +19,7 @@ export function createLevelLayout(scene: THREE.Scene) {
 
   // Pendulum bridge
   addPlatform(group, "pendulum-bridge", [4, 0.5, 12], 0.5, 0, -94.5, materials.beam);
-  
+  console.timeLog('main 流程','fffff');
   // Pendulum pivot posts (visual only, actual swinging parts in LevelGimmicks)
   group.add(cylinder("pendulum-pivot-1", 0.3, 4, [0, 4.5, -91.5], materials.post));
   group.add(cylinder("pendulum-pivot-2", 0.3, 4, [0, 4.5, -97.5], materials.post));
@@ -29,6 +29,7 @@ export function createLevelLayout(scene: THREE.Scene) {
     
   
   addPlatform(group, "goal-deck", [14, 0.8, 8], 2.5, 0, -46.5, materials.goal);
+  console.timeLog('main 流程','sssssssssss')
   scene.add(group);
   return group;
 }
